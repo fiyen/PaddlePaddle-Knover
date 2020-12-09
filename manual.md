@@ -27,11 +27,11 @@ train.py
 
 `--valid_file` 评估文件地址
 
-`--model` 用到的模型名称：`Plato`：plato；NSPModel：next_sentence_prediction model
+`--model` 用到的模型名称：`Plato`：plato；`NSPModel`：next_sentence_prediction model；`UnifiedTransformer`
 
 `--config_path` 模型细节参数配置文件，如24L.json
 
-`--task` 模型应用任务 NextSentencePrediction；DialogGeneration；UnifiedTransformer
+`--task` 模型应用任务 `NextSentencePrediction`；`DialogGeneration`
 
 `--vocab_path` 词集路径
 
@@ -51,15 +51,14 @@ infer.py
 
 `--output_name` 需要保存的对象，response；data_id；score
 
-`--model` 用到的模型名称：Plato：plato；NSPModel：next_sentence_prediction model
+`--model` 用到的模型名称：`Plato`：plato；`NSPModel`：next_sentence_prediction model；`UnifiedTransformer`
 
 `--config_path` 模型细节参数配置文件，如24L.json
 
-`--task` 模型应用任务 NextSentencePrediction；DialogGeneration；UnifiedTransformer
-
+`--task` 模型应用任务 `NextSentencePrediction`；`DialogGeneration`；
 `--vocab_path` 词集路径
 
---spm_model_file sentencepiece model文件的路径
+`--spm_model_file` sentencepiece model文件的路径
 
 ## 3.3 了解对话模型的训练
 ### 3.3.1 一般模型的训练
