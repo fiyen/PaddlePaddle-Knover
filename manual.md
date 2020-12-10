@@ -207,7 +207,7 @@ print(record)
 `file`: 只有一个文件。
 
 `filelist`: 多个文件，所有文件都记录在形如train_filelist的文件里，表明多个文件的地址，每一行为一个文件。
-## 定义配置
+## 4.2 定义配置
 由于在训练模型的时候，需要输入--config_path，这个参数用来读取模型的配置（Transformer层数量等等），这里我们需要定义两个模型的配置文件（**.json）。如下参数生成两个配置文件，配置即为我数据集中附带的模型的配置，如果有兴趣和算力，可以自己改配置训练，最有效的参数是num_hidden_layers和num_attention_heads，增加这些值会增加模型的规模。
 ```
 import json
@@ -245,7 +245,7 @@ f.close()
 
 `latent_type_size`: 仅Plato模型可设置，即隐变量z的规模，决定了文本生成截断生成回答的次数，生成后用打分机制选取最好的回答。
 
-## 4.2 训练命令
+## 4.3 训练命令
 训练UnifiedTransformer：
 ```
 python Knover/train.py \
@@ -286,7 +286,88 @@ python Knover/train.py \
 --save_path Knover/output \
 --mix_negative_sample True
 ```
-## 导出模型
+如果希望提速，可以在百度AiStudio上用脚本进行，代码如下（文件exams/distributed_training.py，也可以直接访问https://aistudio.baidu.com/aistudio/clusterprojectdetail/1154630 进行fork后运行）
+```
+# coding=utf-8
+
+###### 欢迎使用脚本任务,让我们首选熟悉下一些使用规则吧 ###### 
+
+# 数据集文件目录
+datasets_prefix = '/root/paddlejob/workspace/train_data/datasets/'
+
+# 数据集文件具体路径请在编辑项目状态下,通过左侧导航栏「数据集」中文件路径拷贝按钮获取
+train_datasets =  '通过路径拷贝获取真实数据集文件路径 '
+
+# 输出文件目录. 任务完成后平台会自动把该目录所有文件压缩为tar.gz包，用户可以通过「下载输出」可以将输出信息下载到本地.
+output_dir = "/root/paddlejob/workspace/output"
+
+# 日志记录. 任务会自动记录环境初始化日志、任务执行日志、错误日志、执行脚本中所有标准输出和标准出错流(例如print()),用户可以在「提交」任务后,通过「查看日志」追踪日志信息
+
+import os
+
+if __name__ == '__main__':
+    
+    print(os.getcwd())
+    print("预装依赖包")
+    os.system("pip install -i https://mirror.baidu.com/pypi/simple --upgrade pip")
+    os.system("pip install -i https://mirror.baidu.com/pypi/simple sentencepiece")
+    print("解压Knover模块")
+    #os.system("unzip /root/paddlejob/workspace/train_data/datasets/data56424/Knover.zip")
+    os.system("unzip /root/paddlejob/workspace/train_data/datasets/data57647/Knover.zip")
+    os.system("unzip /root/paddlejob/workspace/train_data/datasets/data57647/model.zip")
+    os.system("unzip /root/paddlejob/workspace/train_data/datasets/data57647/NSP.zip")
+    os.system("unzip /root/paddlejob/workspace/train_data/datasets/data57647/test_2.zip")
+    print("解压数据集")
+    #os.system("unzip /root/paddlejob/workspace/train_data/datasets/data56424/pro_data.zip")
+    
+    print("开始训练")
+    os.system("export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7")
+    os.system("cd ./home/aistudio/Knover/latest_model/ && ls -a")
+    
+    #####################################################PARAMETERS######################################################
+    epochs = 1
+    start_step = 0
+    lr = 1e-4
+    model = "Plato"
+    batch_size = 1
+    model_name = "pt_model"  # {"ut_model": UnifiedTransformer, "pt_model": Plato}
+    in_tokens = True  # infer.py 中设为False
+    
+    config_name = "12L_P.json"  # {"12L.json", "12L_P.json", "24L.json", "24L_P.json"}, P is for Plato model
+    
+    func_py = "infer.py"  # {"train.py", "infer.py"}
+    
+    split_size = 5000  # infer.py 运行时切分文件所含样本最大数量
+    ####################################################################################################################
+    
+    if func_py == 'train.py':
+        if model == 'Plato' or model == 'UnifiedTransformer':
+            args = "--model {} --task DialogGeneration --vocab_path ./home/aistudio/Knover/config/vocab.txt --spm_model_file ./home/aistudio/Knover/config/spm.model \
+                --train_file ./home/aistudio/pro_data/train.txt --valid_file ./home/aistudio/pro_data/valid.txt --data_format numerical --file_format file --config_path ./home/aistudio/Knover/config/{} \
+                --in_tokens {} --batch_size {} -lr {} --warmup_steps 1000 --weight_decay 0.01 --num_epochs {} \
+                --max_src_len 384 --max_tgt_len 128 --max_seq_len 512 \
+                --log_step 100 --validation_steps 5000 --save_steps 100 \
+                --is_distributed True is_cn True --start_step {} \
+                --init_checkpoint ./model/{} \
+                --save_path /root/paddlejob/workspace/output \
+                ".format(model, config_name, in_tokens, batch_size, lr, epochs, start_step, model_name)
+            os.system("python -m paddle.distributed.launch ./home/aistudio/Knover/{} {}".format(func_py, args))
+        elif model == 'NSPModel':
+            args = "--model {} --task NextSentencePrediction --vocab_path ./home/aistudio/Knover/config/vocab.txt --spm_model_file ./home/aistudio/Knover/config/spm.model \
+                --train_file ./home/aistudio/pro_data/train.txt --valid_file ./home/aistudio/pro_data/valid.txt --data_format numerical --file_format file --config_path ./home/aistudio/Knover/config/{} \
+                --in_tokens {} --batch_size {} -lr {} --warmup_steps 1000 --weight_decay 0.01 --num_epochs {} \
+                --max_src_len 384 --max_tgt_len 128 --max_seq_len 512 \
+                --log_step 100 --validation_steps 5000 --save_steps 100 \
+                --is_distributed True --start_step {} \
+                --init_checkpoint ./model/{} \
+                --save_path /root/paddlejob/workspace/output \
+                --mix_negative_sample True \
+                ".format(model, config_name, in_tokens, batch_size, lr, epochs, start_step, model_name)
+            os.system("python -m paddle.distributed.launch ./home/aistudio/Knover/{} {}".format(func_py, args))
+        else:
+            raise ValueError("Only support Plato, UnifiedTransformer, and NSPModel but received %s" % model)
+```
+## 4.4 导出模型
 保存UnifiedTransformer
 ```
 python Knover/save_inference_model.py \
@@ -322,7 +403,7 @@ python Knover/save_inference_model.py \
 --config_path Knover/config/12L_P.json
 ```
 
-## 预测
+## 4.5 预测
 ```
 python Knover/infer.py \
 --model Plato --task DialogGeneration --vocab_path Knover/config/vocab.txt --spm_model_file Knover/config/spm.model \
