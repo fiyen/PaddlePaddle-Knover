@@ -5,6 +5,7 @@
 # encoding:utf-8
 import requests
 
+# 以下KEY和ID属于私人，随时可能过期，感兴趣可以自己申请
 APPKEY = "kYNI0SCy7FZM6S9Ybk9gGsEt"
 SECRETKEY = "LSQItEPcCCzPvV3VxFuGzNtg8KQvqwfh"
 SERVICEID = 'S39158'
