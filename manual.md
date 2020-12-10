@@ -243,7 +243,7 @@ f.close()
 
 `vocab_size`: 词表规模，即有多少个可编码的词单元。
 
-`latent_type_size`: 仅Plato模型可设置，即隐变量z的规模，决定了文本生成截断生成回答的次数，生成后用打分机制选取最好的回答。
+`latent_type_size`: 仅Plato模型可设置，即隐变量z的规模，决定了文本生成阶段生成回答的次数，生成后用打分机制选取最好的回答。
 
 ## 4.3 训练命令
 训练UnifiedTransformer：
