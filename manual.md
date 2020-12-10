@@ -14,12 +14,12 @@ Plato是百度推出的一个基于飞桨的多轮对话模型。该模型的最
 1.package文件夹中存放了其自带的试验数据的词集，语句切分模型（spm.model, 即sentencepiece model，这个模型用在语句的预处理上，必须给定），以及模型的细节参数（词集大小，隐含层个数，激活函数等等，具体查看package/dialog_en/24L.json。
 2.models文件夹存放了模型的各个子模块，plato模块也在其中
 3.data文件夹存放了实验用的小文件
-4.tasks文件夹中包含了模型两种应用任务的实现，包括“下一句语句预测”和“会话生成”。这个应用任务的选择是必须给出的，对应参数 --tasks, 分别写作NextSentencePrediction和DialogGeneration。具体来说，DialogGeneration是训练对话模型时用到的，而NextSentencePrediction是在训练打分模型时用到的。这里的具体区别后边再讲。
+4.tasks文件夹中包含了模型两种应用任务的实现，包括“下一句语句预测”和“会话生成”。这个应用任务的选择是必须给出的，对应参数 `--tasks`, 分别写作`NextSentencePrediction`和`DialogGeneration`。具体来说，`DialogGeneration`是训练对话模型时用到的，而`NextSentencePrediction`是在训练打分模型时用到的。这里的具体区别后边再讲。
 
 ## 3.2 认识Konver的主要参数
 `--init_pretraining_params` 预训练模型所在文件夹，如果需要加载（当然需要）预训练模型需要给出这个参数
 
-`--init_checkpoint` 保存节点的所在文件夹，如果给出了init_checkpoint则从该文件夹初始化训练参数（等于覆盖了init_pretraining_params的参数），checkpoint保存了模型更多的细节，如训练步数，当前学习率，还有模型涉及的所有训练参数等，如果从checkpoint开始继续训练模型，模型会从之前中断的状态继续训练，如果不设--start_step模型会错误显示当前的步数，但是内部的参数是按照正确的步数更新的。
+`--init_checkpoint` 保存节点的所在文件夹，如果给出了init_checkpoint则从该文件夹初始化训练参数（等于覆盖了init_pretraining_params的参数），checkpoint保存了模型更多的细节，如训练步数，当前学习率，还有模型涉及的所有训练参数等，如果从checkpoint开始继续训练模型，模型会从之前中断的状态继续训练，如果不设`--start_step`模型会错误显示当前的步数，但是内部的参数是按照正确的步数更新的。
 
 train.py
 
@@ -49,7 +49,7 @@ infer.py
 
 `--infer_file` 需要推断的文件
 
-`--output_name` 需要保存的对象，response；data_id；score
+`--output_name` 需要保存的对象，`response`；`data_id`；`score`
 
 `--model` 用到的模型名称：`Plato`：plato；`NSPModel`：next_sentence_prediction model；`UnifiedTransformer`
 
@@ -66,7 +66,7 @@ infer.py
 
 第二步：准备数据。把自己准备的训练数据转换成合适的格式，存入txt文件，供训练使用。
 
-第三步：调用train.py进行训练，模型选择UnifiedTransformer，任务选择DialogGeneration。
+第三步：调用train.py进行训练，模型选择`UnifiedTransformer`，任务选择`DialogGeneration`。
 
 第四步：训练完成后，调用save_inference_model.py将预测模型导出
 
@@ -74,13 +74,13 @@ infer.py
 ### 3.3.2 Plato-2模型的训练
 在上述四步完成后进行。前两步与上述过程相似，在训练出UnifiedTransformer模型后，按照以下步骤进行训练：
 
-第三步：调用train.py进行训练，模型选择Plato，任务选择DialogGeneration，并且--init_pretraining_params选择之前训练好的UnfiedTransformer模型（如果未进行上述第四步，则导出的模型可以用--init_checkpoint指定）
+第三步：调用train.py进行训练，模型选择`Plato`，任务选择`DialogGeneration`，并且`--init_pretraining_params`选择之前训练好的UnfiedTransformer模型（如果未进行上述第四步，则导出的模型可以用`--init_checkpoint`指定）
 
-第四步：训练完成后，继续调用train.py进行训练，模型选择Plato，任务选择NextSentencePrediction（注意区别）。训练打分模型。
+第四步：训练完成后，继续调用train.py进行训练，模型选择`Plato`，任务选择`NextSentencePrediction`（注意区别）。训练打分模型。
 
 第五步：分别用save_inference_model.py导出PLATO模型和打分模型NSP。
 
-经过这些步，模型训练完成。用infer.py预测时，如果使用PLATO模型，需要指定打分方使--ranking_score，如果选择nsp_score，则需要设定打分模型为NSP。以上具体过程后边会细讲。
+经过这些步，模型训练完成。用infer.py预测时，如果使用PLATO模型，需要指定打分方式`--ranking_score`，如果选择`nsp_score`，则需要设定打分模型为NSP。以上具体过程后边会细讲。
 
 # 4 具体操作
 ## 4.1 数据准备
@@ -108,3 +108,10 @@ ids = SPM.encode_as_ids(text)
 print(ids)
 print(SPM.decode_ids(ids))
 ```
+## 4.1.2 文本的输入
+Plato对文本输入的支持还是挺多样化的，它支持直接输入原始文本，也支持输入经过tokenize的分词序列，或者是已经编码（encoded）的数字序列。但是无论Plato支持的格式如何，在进行训练和预测之前，都会转换成能够被识别的标准格式。在Knover中，这个格式是通过定义的Record完成的。Record的定义如下：
+```
+from collections import namedtuple
+Record = namedtuple("Record", fields, defaults=(None,) * len(fields))
+```
+在解释fields的值之前，我们先来思考一下Plato需要哪些输入。在完成一段对话时，我们通常会综合对话的历史和自己所知的历史知识来进行判断，来决定自己将要回答什么。而在对话生成中，这些信息也是需要考虑的。因此，Plato需要的输入有两个，首先，是当前对方的问话，其次是已经进行过的历史对话信息，最后是背景知识。由于各种条件的限制，背景知识可能并没有办法获取，所以至少需要的是已进行的历史对话信息，和此时对方的问话。进一步，我们需要考虑更多的信息：如果纪录了历史对话，我们如何判断每段对话的起始位置，如何判断从什么时候开始生成需要的回答，在训练集中，我们还要知道哪一部分是训练中给出的回答用于调整模型的参数。
